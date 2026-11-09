@@ -1,0 +1,5 @@
+# Local editor/agent settings (contain local IP addresses)
+.claude/
+__pycache__/
+# Home Assistant access tokens – never commit
+.ha_token

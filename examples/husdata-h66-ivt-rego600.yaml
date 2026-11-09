@@ -1,0 +1,46 @@
+# Heat Pump Flow Card – Husdata H66 + IVT Rego 600/637 (t.ex. Greenline HT Plus)
+#
+# Entity-id:n följer Husdatas MQTT-autodiscovery när enheten heter "HP" (prefix "hp_h66").
+# Namnen bygger på Husdatas registerlista för Rego 600 och kan skilja sig något –
+# jämför med dina entiteter, eller lägg till kortet via "Lägg till kort" så hittar det dem själv.
+
+type: custom:heatpump-flow-card
+title: Bergvärme
+name: IVT Greenline HT Plus
+language: sv
+source: ground
+aux_heater_max_kw: 9          # Rego 600: 3 + 6 kW
+entities:
+  # Temperaturer
+  outdoor: sensor.hp_h66outdoor                              # 0007
+  indoor: sensor.hp_h66indoor                                # 0008 (om rumsgivare finns)
+  brine_in: sensor.hp_h66brine_in_evaporator                 # 0005 köldbärare in (GT10)
+  brine_out: sensor.hp_h66brine_out_condenser                # 0006 köldbärare ut (GT11)
+  heat_carrier_supply: sensor.hp_h66heat_carrier_forwrd      # 0004 värmebärare fram (GT8)
+  heat_carrier_return: sensor.hp_h66heat_carrier_return      # 0003 värmebärare retur (GT9)
+  radiator_supply: sensor.hp_h66radiator_forward             # 0002 framledning
+  radiator_return: sensor.hp_h66radiator_return              # 0001 returledning (GT1)
+  hot_water: sensor.hp_h66warm_water_1_top                   # 0009 varmvatten (GT3)
+  # hot_water_mid: sensor.hp_h66warm_water_2_mid             # 000A extern tank (GT3X)
+  hot_gas: sensor.hp_h66hot_gas_compr                        # 000B hetgas (GT6)
+
+  # Drift
+  compressor: binary_sensor.hp_h66compressor                 # 1A01
+  brine_pump: binary_sensor.hp_h66pump_cold_circuit          # 1A04
+  heat_carrier_pump: binary_sensor.hp_h66pump_heat_circuit   # 1A05
+  radiator_pump: binary_sensor.hp_h66pump_radiator           # 1A06
+  switch_valve: binary_sensor.hp_h66switch_valve_1           # 1A07 (på = varmvatten)
+  aux_heater: sensor.hp_h66add_heat_status                   # 3104 (%)
+  alarm: binary_sensor.hp_h66alarm                           # 1A20
+  alarm_code: sensor.hp_h66alarm_code                        # BA91
+
+  # Börvärden och drifttid
+  heating_setpoint: sensor.hp_h66heating_setpoint            # 0107
+  hot_water_setpoint: sensor.hp_h66warm_water_setpoint       # 0111
+  room_setpoint: climate.hp_h66room_temp_setpoint            # 0203
+  compressor_hours: sensor.hp_h66compr_cons_heating          # 6C55 (timmar på Rego 600)
+
+# Valfritt: fler rutor längst ner
+# extra_entities:
+#   - entity: sensor.hp_h66compr_cons_hotwat                 # 6C56
+#     name: Drifttid varmvatten

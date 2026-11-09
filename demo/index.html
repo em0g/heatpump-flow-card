@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heat Pump Flow Card – demo</title>
+<style>
+  :root {
+    --primary-background-color: #f4f5f7;
+    --card-background-color: #ffffff;
+    --primary-text-color: #1c1f24;
+    --secondary-text-color: #6b7280;
+    --primary-color: #03a9f4;
+    --divider-color: rgba(0,0,0,.12);
+  }
+  :root[data-theme="dark"] {
+    --primary-background-color: #111318;
+    --card-background-color: #1c1f26;
+    --primary-text-color: #e5e7eb;
+    --secondary-text-color: #9ca3af;
+    --divider-color: rgba(255,255,255,.12);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 48px;
+    background: var(--primary-background-color); color: var(--primary-text-color);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  p.sub { margin: 0 0 16px; color: var(--secondary-text-color); font-size: 13px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; align-items: center; }
+  .bar .sep { width: 1px; height: 24px; background: var(--divider-color); margin: 0 4px; }
+  button {
+    font: inherit; font-size: 13px; padding: 6px 12px; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--divider-color); background: var(--card-background-color); color: inherit;
+  }
+  button.on { background: var(--primary-color); color: #fff; border-color: transparent; }
+  .wrap { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); max-width: 980px; }
+  .wrap.section { max-width: 500px; }
+  .wrap.phone { max-width: 380px; }
+  label.sl { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+  #log { font: 12px ui-monospace, Consolas, monospace; color: var(--secondary-text-color); margin-top: 12px; }
+</style>
+</head>
+<body>
+  <h1>Heat Pump Flow Card – demo</h1>
+  <p class="sub">Simulerade värden i scenarierna. <b>Live</b> läser din H66 via <code>demo/serve.py --h66 &lt;ip&gt;</code>.</p>
+
+  <div class="bar" id="scenarios">
+    <button data-s="heating" class="on">Värmedrift</button>
+    <button data-s="hot_water">Varmvatten</button>
+    <button data-s="aux">Värme + tillsats</button>
+    <button data-s="standby">Vila</button>
+    <button data-s="alarm">Larm</button>
+    <button data-s="live" id="live">Live: din H66</button>
+    <span class="sep"></span>
+    <button id="theme">Mörkt tema</button>
+    <button id="width">Bredd: full</button>
+    <button id="source">Luft/vatten</button>
+    <button id="anim">Animationer av</button>
+    <span class="sep"></span>
+    <label class="sl">Ute <input type="range" id="outdoor" min="-25" max="25" step="0.5" value="-3"></label>
+  </div>
+
+  <div class="wrap" id="wrap">
+    <heatpump-flow-card id="card"></heatpump-flow-card>
+  </div>
+  <div id="log"></div>
+
+<script src="../dist/heatpump-flow-card.js"></script>
+<script>
+  const card = document.getElementById('card');
+  const baseConfig = {
+    type: 'custom:heatpump-flow-card',
+    title: 'Bergvärme',
+    name: 'IVT Greenline HT Plus',
+    source: 'ground',
+    aux_heater_max_kw: 9,
+    entities: {
+      outdoor: 'sensor.h66_outdoor',
+      indoor: 'sensor.h66_indoor',
+      brine_in: 'sensor.h66_brine_in',
+      brine_out: 'sensor.h66_brine_out',
+      heat_carrier_supply: 'sensor.h66_heat_carrier_forward',
+      heat_carrier_return: 'sensor.h66_heat_carrier_return',
+      radiator_supply: 'sensor.h66_radiator_forward',
+      radiator_return: 'sensor.h66_radiator_return',
+      hot_water: 'sensor.h66_warm_water_top',
+      hot_gas: 'sensor.h66_hot_gas',
+      suction_gas: 'sensor.h66_suction_gas',
+      compressor_speed: 'sensor.h66_compressor_speed',
+      heat_output: 'sensor.h66_compressor_power',
+      compressor_temp: 'sensor.h66_compressor_temp',
+      energy_supplied: 'sensor.h66_supp_energy_tot',
+      energy_consumed: 'sensor.h66_compr_consump_tot',
+      energy_aux: 'sensor.h66_aux_consumption_tot',
+      compressor_starts: 'sensor.h66_compr_starts',
+      compressor: 'binary_sensor.h66_compressor',
+      brine_pump: 'binary_sensor.h66_pump_cold_circuit',
+      heat_carrier_pump: 'binary_sensor.h66_pump_heat_circuit',
+      radiator_pump: 'binary_sensor.h66_pump_radiator',
+      switch_valve: 'binary_sensor.h66_switch_valve',
+      aux_heater: 'sensor.h66_add_heat',
+      alarm: 'binary_sensor.h66_alarm',
+      alarm_code: 'sensor.h66_alarm_code',
+      heating_setpoint: 'sensor.h66_heating_setpoint',
+      hot_water_setpoint: 'sensor.h66_warm_water_setpoint',
+      room_setpoint: 'sensor.h66_room_temp_setpoint',
+      compressor_hours: 'sensor.h66_compressor_runtime_heating',
+    },
+  };
+
+  const meta = {
+    outdoor: ['Outdoor', '°C'], indoor: ['Indoor', '°C'], brine_in: ['Brine in', '°C'], brine_out: ['Brine out', '°C'],
+    heat_carrier_forward: ['Heat carrier forward', '°C'], heat_carrier_return: ['Heat carrier return', '°C'],
+    radiator_forward: ['Radiator forward', '°C'], radiator_return: ['Radiator return', '°C'],
+    warm_water_top: ['Warm water top', '°C'], hot_gas: ['Hot gas', '°C'], add_heat: ['Add heat', '%'],
+    alarm_code: ['Alarm code', ''], heating_setpoint: ['Heating setpoint', '°C'],
+    warm_water_setpoint: ['Warm water setpoint', '°C'], room_temp_setpoint: ['Room temp setpoint', '°C'],
+    compressor_runtime_heating: ['Compressor runtime heating', 'h'],
+    suction_gas: ['Suction gas', '°C'], compressor_speed: ['Compressor speed', '%'],
+    compressor_power: ['Compressor power', 'kW'], compressor_temp: ['Compressor', '°C'],
+    supp_energy_tot: ['Supp energy tot', 'kWh'], compr_consump_tot: ['Compr. consump. tot', 'kWh'],
+    aux_consumption_tot: ['Aux consumption tot', 'kWh'], compr_starts: ['Compr. Starts', ''],
+  };
+  const FIXED = {
+    heating_setpoint: 38.0, warm_water_setpoint: 50.0, room_temp_setpoint: 21.0, compressor_runtime_heating: 21384,
+    supp_energy_tot: 112854, compr_consump_tot: 27806, aux_consumption_tot: 606, compr_starts: 11046,
+  };
+
+  const SCEN = {
+    heating:   { compressor: 1, pump_cold_circuit: 1, pump_heat_circuit: 1, pump_radiator: 1, switch_valve: 0, add_heat: 0,  alarm: 0,
+                 brine_in: 2.8, brine_out: -0.6, heat_carrier_forward: 41.2, heat_carrier_return: 34.6, radiator_forward: 38.4, radiator_return: 31.9, hot_gas: 84.5, warm_water_top: 48.3,
+                 suction_gas: 5.8, compressor_speed: 31, compressor_power: 3.9, compressor_temp: 60.1 },
+    hot_water: { compressor: 1, pump_cold_circuit: 1, pump_heat_circuit: 1, pump_radiator: 1, switch_valve: 1, add_heat: 0,  alarm: 0,
+                 brine_in: 2.4, brine_out: -1.2, heat_carrier_forward: 56.8, heat_carrier_return: 49.1, radiator_forward: 33.0, radiator_return: 29.8, hot_gas: 98.2, warm_water_top: 51.0,
+                 suction_gas: 4.9, compressor_speed: 64, compressor_power: 6.8, compressor_temp: 72.4 },
+    aux:       { compressor: 1, pump_cold_circuit: 1, pump_heat_circuit: 1, pump_radiator: 1, switch_valve: 0, add_heat: 33, alarm: 0,
+                 brine_in: 1.1, brine_out: -2.4, heat_carrier_forward: 49.5, heat_carrier_return: 39.2, radiator_forward: 46.1, radiator_return: 37.5, hot_gas: 88.0, warm_water_top: 47.1,
+                 suction_gas: 3.6, compressor_speed: 100, compressor_power: 9.6, compressor_temp: 75.0 },
+    standby:   { compressor: 0, pump_cold_circuit: 0, pump_heat_circuit: 0, pump_radiator: 1, switch_valve: 0, add_heat: 0,  alarm: 0,
+                 brine_in: 4.6, brine_out: 4.1, heat_carrier_forward: 30.2, heat_carrier_return: 29.5, radiator_forward: 29.8, radiator_return: 28.6, hot_gas: 41.0, warm_water_top: 49.6,
+                 suction_gas: 4.4, compressor_speed: 0, compressor_power: 0, compressor_temp: 38.0 },
+    alarm:     { compressor: 0, pump_cold_circuit: 0, pump_heat_circuit: 0, pump_radiator: 1, switch_valve: 0, add_heat: 66, alarm: 1,
+                 brine_in: -4.8, brine_out: -6.1, heat_carrier_forward: 44.0, heat_carrier_return: 36.3, radiator_forward: 42.5, radiator_return: 35.1, hot_gas: 52.0, warm_water_top: 44.0, alarm_code: 18,
+                 suction_gas: -3.0, compressor_speed: 0, compressor_power: 0, compressor_temp: 45.0 },
+  };
+
+  let current = 'heating';
+  let outdoor = -3;
+  let jitter = {};
+  let config = JSON.parse(JSON.stringify(baseConfig));
+
+  function buildHass() {
+    const s = SCEN[current];
+    const states = {};
+    const put = (id, state, attrs) => {
+      states[id] = { entity_id: id, state: String(state), attributes: attrs, last_updated: Date.now() };
+    };
+    const v = (k, d) => {
+      const base = k === 'outdoor' ? outdoor : (s[k] ?? d);
+      return Math.round((base + (jitter[k] || 0)) * 10) / 10;
+    };
+    Object.entries(meta).forEach(([k, [name, unit]]) => {
+      let val;
+      if (k === 'outdoor') val = v('outdoor');
+      else if (k === 'indoor') val = v('indoor', 21.4);
+      else if (k === 'add_heat') val = s.add_heat;
+      else if (k === 'alarm_code') val = s.alarm_code ?? 0;
+      else if (k in FIXED) val = FIXED[k];
+      else if (['compressor_speed', 'compressor_power'].includes(k)) val = s[k];
+      else val = v(k);
+      put(`sensor.h66_${k}`, val, { friendly_name: name, unit_of_measurement: unit });
+    });
+    ['compressor', 'pump_cold_circuit', 'pump_heat_circuit', 'pump_radiator', 'switch_valve', 'alarm'].forEach((k) => {
+      put(`binary_sensor.h66_${k}`, s[k] ? 'on' : 'off', { friendly_name: k });
+    });
+    return { states, language: 'sv', locale: { language: 'sv' }, callService() {} };
+  }
+
+  /* ---- Live mode: real values from the H66 status page via demo/serve.py ---- */
+  let live = null;
+  let liveTimer = null;
+  const logEl = () => document.getElementById('log');
+
+  function liveHass(data) {
+    const states = {};
+    Object.entries(data.values).forEach(([idx, v]) => {
+      const bin = /^1A/i.test(idx);
+      const id = `${bin ? 'binary_sensor' : 'sensor'}.h66_${idx.toLowerCase()}`;
+      const unit = { C: '°C', Watt: 'W' }[v.unit] ?? v.unit;
+      states[id] = {
+        entity_id: id,
+        state: bin ? (v.value ? 'on' : 'off') : String(v.value),
+        attributes: { friendly_name: v.name, unit_of_measurement: unit || undefined },
+      };
+    });
+    return { states, language: 'sv', locale: { language: 'sv' }, callService() {} };
+  }
+
+  async function pollLive(first) {
+    try {
+      const r = await fetch('/h66.json', { cache: 'no-store' });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error);
+      live = liveHass(data);
+      if (first) {
+        // Let the card's own auto-detection build the config – this is what HA's card picker does.
+        const stub = customElements.get('heatpump-flow-card').getStubConfig(live);
+        config = { ...stub, title: 'Live från din H66', name: data.controller || 'Värmepump',
+          aux_heater_max_kw: 9, source: config.source, animations: config.animations };
+        card.setConfig(config);
+        console.log('Auto-detected config', config);
+      }
+      card.hass = live;
+      logEl().textContent = `Live: ${Object.keys(data.values).length} värden från ${data.controller}, uppdaterat ${new Date().toLocaleTimeString('sv-SE')}`;
+    } catch (e) {
+      logEl().textContent = `Live-läget fungerar inte: ${e.message}`;
+    }
+  }
+
+  function push() {
+    if (current === 'live') { if (live) card.hass = live; return; }
+    card.hass = buildHass();
+  }
+
+  card.setConfig(config);
+  push();
+
+  // Small random drift so it feels alive
+  setInterval(() => {
+    ['brine_in', 'brine_out', 'radiator_forward', 'radiator_return', 'heat_carrier_forward', 'heat_carrier_return', 'hot_gas', 'warm_water_top', 'indoor']
+      .forEach((k) => { jitter[k] = Math.max(-0.6, Math.min(0.6, (jitter[k] || 0) + (Math.random() - 0.5) * 0.2)); });
+    push();
+  }, 2500);
+
+  document.getElementById('scenarios').addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-s]');
+    if (!b) return;
+    const wasLive = current === 'live';
+    current = b.dataset.s;
+    document.querySelectorAll('button[data-s]').forEach((x) => x.classList.toggle('on', x === b));
+    clearInterval(liveTimer);
+    if (current === 'live') {
+      pollLive(true);
+      liveTimer = setInterval(() => pollLive(false), 5000);
+      return;
+    }
+    if (wasLive) {
+      config = { ...JSON.parse(JSON.stringify(baseConfig)), source: config.source, animations: config.animations };
+      card.setConfig(config);
+      logEl().textContent = '';
+    }
+    push();
+  });
+  document.getElementById('outdoor').addEventListener('input', (e) => { outdoor = parseFloat(e.target.value); push(); });
+  document.getElementById('theme').addEventListener('click', (e) => {
+    const dark = document.documentElement.dataset.theme !== 'dark';
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    e.target.classList.toggle('on', dark);
+  });
+  const widths = [['', 'full'], ['section', 'sektion 500px'], ['phone', 'mobil 380px']];
+  let wi = 0;
+  document.getElementById('width').addEventListener('click', (e) => {
+    const wrap = document.getElementById('wrap');
+    wi = (wi + 1) % widths.length;
+    wrap.className = `wrap ${widths[wi][0]}`;
+    e.target.textContent = `Bredd: ${widths[wi][1]}`;
+    e.target.classList.toggle('on', wi > 0);
+  });
+  document.getElementById('source').addEventListener('click', (e) => {
+    config = { ...config, source: config.source === 'air' ? 'ground' : 'air', title: config.source === 'air' ? 'Bergvärme' : 'Luft/vatten' };
+    e.target.classList.toggle('on', config.source === 'air');
+    card.setConfig(config); push();
+  });
+  document.getElementById('anim').addEventListener('click', (e) => {
+    config = { ...config, animations: config.animations === false };
+    e.target.classList.toggle('on', config.animations === false);
+    card.setConfig(config); push();
+  });
+  card.addEventListener('hass-more-info', (e) => {
+    document.getElementById('log').textContent = `more-info → ${e.detail.entityId}`;
+  });
+</script>
+</body>
+</html>

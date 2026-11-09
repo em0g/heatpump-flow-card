@@ -1,0 +1,62 @@
+# Heat Pump Flow Card – Husdata H66 + IVT Rego 2000/3000/3100 (bergvärme, varvtalsstyrd)
+#
+# Entity-id:n nedan är de som Husdatas MQTT-autodiscovery skapar när enheten heter "HP"
+# (prefix "hp_h66"). Heter din enhet något annat byter du bara prefixet.
+# Tips: lägg till kortet via "Lägg till kort" i stället – då hittar det sensorerna själv.
+#
+# Rego 2000/3000 har ingen returgivare för radiatorkretsen (0001). Kortet använder då
+# värmebärare retur (0003) för färgen på returledningen.
+# Husdatas inställningar (rumsbörvärde, kurva m.m.) är climate-entiteter; kortet läser
+# deras temperaturattribut.
+
+type: custom:heatpump-flow-card
+title: Bergvärme
+name: IVT bergvärme
+language: sv
+source: ground
+aux_heater_max_kw: 9
+entities:
+  # Temperaturer
+  outdoor: sensor.hp_h66outdoor                              # 0007
+  indoor: sensor.hp_h66indoor                                # 0008
+  brine_in: sensor.hp_h66brine_in_evaporator                 # 0005
+  brine_out: sensor.hp_h66brine_out_condenser                # 0006
+  heat_carrier_supply: sensor.hp_h66heat_carrier_forwrd      # 0004
+  heat_carrier_return: sensor.hp_h66heat_carrier_return      # 0003
+  radiator_supply: sensor.hp_h66radiator_forward             # 0002
+  hot_water: sensor.hp_h66warm_water_1_top                   # 0009
+  hot_water_mid: sensor.hp_h66warm_water_2_mid               # 000A
+  hot_gas: sensor.hp_h66hot_gas                              # 000B
+  suction_gas: sensor.hp_h66suction_gas                      # 000C
+  compressor_temp: sensor.hp_h66compressor                   # 0014
+
+  # Kompressor (varvtalsstyrd)
+  compressor: binary_sensor.hp_h66compressor                 # 1A01
+  compressor_speed: sensor.hp_h66compressor_speed            # 3108 (%)
+  heat_output: sensor.hp_h66compressor_power                 # 9112 (kW avgiven värme)
+
+  # Pumpar, ventil, tillsats, larm
+  brine_pump: binary_sensor.hp_h66pump_cold_circuit          # 1A04
+  heat_carrier_pump: binary_sensor.hp_h66pump_heat_circuit   # 1A05
+  radiator_pump: binary_sensor.hp_h66pump_radiator           # 1A06
+  switch_valve: binary_sensor.hp_h66switch_valve_1           # 1A07 (på = varmvatten)
+  brine_pump_speed: sensor.hp_h66brine_pump_speed            # 3110 (%)
+  circ_pump_speed: sensor.hp_h66circ_pump_speed              # 3109 (%)
+  aux_heater: sensor.hp_h66add_heat_status                   # 3104 (%)
+  alarm: binary_sensor.hp_h66alarm                           # 1A20
+  alarm_code: sensor.hp_h66alarm_code                        # BA91
+
+  # Börvärden
+  heating_setpoint: sensor.hp_h66heating_setpoint            # 0107
+  hot_water_setpoint: sensor.hp_h66warm_water_setpoint       # 0111
+  room_setpoint: climate.hp_h66room_temp_setpoint            # 0203
+
+  # Energi och drift (ger SCOP och drifttid per start)
+  energy_supplied: sensor.hp_h66supp_energy_tot              # 5C51
+  energy_consumed: sensor.hp_h66compr_consump_tot            # 5C54
+  energy_aux: sensor.hp_h66aux_consumption_tot               # 5C57
+  compressor_hours: sensor.hp_h66compr_runtime               # 6C60
+  compressor_starts: sensor.hp_h66compr_starts               # 2C61
+
+# Har du en elmätare på värmepumpen visas den i displayen, och "COP just nu" räknas ut:
+#   power: sensor.varmepump_effekt
