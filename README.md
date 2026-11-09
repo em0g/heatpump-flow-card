@@ -1,5 +1,7 @@
 # Heat Pump Flow Card
 
+![Heat Pump Flow Card i mörkt tema som växlar mellan värmedrift, varmvatten, värme med tillsats och larm](https://raw.githubusercontent.com/em0g/heatpump-flow-card/main/docs/demo.webp)
+
 Ett animerat Lovelace-kort för Home Assistant som visar värmepumpen i genomskärning: borrhål eller utedel, köldmediekretsen (förångare, kompressor, kondensor, expansionsventil), tillsatsen, växelventilen, radiatorkretsen och varmvattenberedaren.
 
 Kortet är byggt med Husdata H60/H66 och IVT i åtanke, men fungerar med alla värmepumpar. Du kopplar bara in de sensorer du har, och delar utan sensor räknas ut eller döljs.
@@ -19,6 +21,12 @@ Kortet är byggt med Husdata H60/H66 och IVT i åtanke, men fungerar med alla v�
 - Klicka på en temperatur, pump eller ruta för att öppna Home Assistants historikfönster.
 - Fungerar i ljust och mörkt tema och anpassar storleken på temperaturerna till kortets bredd (mobil, sektion, helskärm).
 - Kortet har en visuell redigerare, och följer inställningen *reducera rörelse* om den är på.
+
+Ljust tema med detaljrutorna:
+
+![Heat Pump Flow Card i ljust tema med detaljrutor för ΔT, SCOP, börvärden, energi och drifttid](https://raw.githubusercontent.com/em0g/heatpump-flow-card/main/docs/light.png)
+
+Bilderna är inspelade från demosidan med simulerade värden (se *Testa utan Home Assistant* nedan).
 
 ## Installation
 
